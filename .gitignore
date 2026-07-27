@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+data/chroma/
+data/extracted/
+data/rag_image_artifacts/
+
