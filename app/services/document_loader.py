@@ -61,31 +61,47 @@ def _load_textbook_pdfs() -> list[Document]:
     for path in sorted(TEXTBOOKS_DIR.glob("*.pdf")):
         subject = _subject_from_name(path)
         extracted = extract_pdf(path, subject=subject, grade=7)
-        for page in extracted["pages"]:
-            text_parts = [page["text"]]
-            for image in page["images"]:
-                text_parts.append(
-                    f"[Related textbook image]\n"
-                    f"Caption: {image['vision_caption']}\n"
-                    f"Artifact: {image['artifact_path']}"
-                )
-            docs.append(
-                Document(
-                    page_content="\n\n".join(part for part in text_parts if part.strip()),
-                    metadata={
-                        "source": extracted["source"],
-                        "file_name": path.name,
-                        "file_type": ".pdf",
-                        "subject": subject,
-                        "grade": 7,
-                        "page_number": page["page_number"],
-                        "loader": "PyMuPDFTextImageLoader",
-                        "related_images": page["images"],
-                        "vector_drawing_count": page["vector_drawing_count"],
-                    },
-                )
-            )
+        docs.append(_build_pdf_document(path, extracted, subject))
     return docs
+
+
+def _build_pdf_document(path: Path, extracted: dict, subject: str) -> Document:
+    page_blocks: list[str] = []
+    related_images: list[dict] = []
+    vector_drawing_count = 0
+    page_numbers: list[int] = []
+
+    for page in extracted["pages"]:
+        page_number = page["page_number"]
+        page_numbers.append(page_number)
+        vector_drawing_count += page["vector_drawing_count"]
+
+        text_parts = [f"[Page {page_number}]", page["text"]]
+        for image in page["images"]:
+            image_with_page = {**image, "page_number": page_number}
+            related_images.append(image_with_page)
+            text_parts.append(
+                f"[Related textbook image on page {page_number}]\n"
+                f"Caption: {image['vision_caption']}\n"
+                f"Artifact: {image['artifact_path']}"
+            )
+        page_blocks.append("\n\n".join(part for part in text_parts if part.strip()))
+
+    return Document(
+        page_content="\n\n".join(block for block in page_blocks if block.strip()),
+        metadata={
+            "source": extracted["source"],
+            "file_name": path.name,
+            "file_type": ".pdf",
+            "subject": subject,
+            "grade": 7,
+            "page_numbers": page_numbers,
+            "loader": "PyMuPDFTextImageLoader",
+            "loader_strategy": "full_pdf_then_section_split",
+            "related_images": related_images,
+            "vector_drawing_count": vector_drawing_count,
+        },
+    )
 
 
 def _number_chunks(chunks: list[Document]) -> list[Document]:

@@ -48,11 +48,11 @@ Student / UI
 ```text
 Textbook sources
   -> load markdown/PDF
-  -> extract page text
-  -> extract images
+  -> extract text and images from every PDF page
   -> filter noisy images
   -> convert clean image to base64
   -> caption image with page context
+  -> merge PDF pages into one logical document
   -> create image embedding text
   -> split by textbook sections/headings
   -> recursively split oversized sections
@@ -62,7 +62,7 @@ Textbook sources
 
 ## Section-Aware Chunking
 
-The ingestion pipeline uses section-aware chunking before embedding. Markdown files are split by `#`, `##`, and `###` headers. PDF textbook text is split by detected chapter, unit, uppercase heading, and numbered section patterns such as `1.1 Large Numbers Around Us`.
+The ingestion pipeline uses section-aware chunking before embedding. Markdown files are split by `#`, `##`, and `###` headers. For PDFs, PyMuPDF first extracts text and images from all pages, then the loader merges the PDF into one logical document with page markers such as `[Page 1]`. After that, textbook text is split by detected chapter, unit, uppercase heading, and numbered section patterns such as `1.1 Large Numbers Around Us`.
 
 Each chunk carries metadata such as:
 
@@ -70,12 +70,13 @@ Each chunk carries metadata such as:
 - `grade`
 - `file_name`
 - `page_number`
+- `page_numbers`
 - `section_title`
 - `section_path`
 - `section_number`
 - `chunk_strategy`
 
-This improves retrieval because the vector store can return the exact textbook section instead of a random character slice. If a section is still too large, the project applies `RecursiveCharacterTextSplitter` inside that section so semantic boundaries are preserved as much as possible.
+This improves retrieval because the vector store can return the exact textbook section instead of a random character slice. It also handles sections that continue across page boundaries. If a section is still too large, the project applies `RecursiveCharacterTextSplitter` inside that section so semantic boundaries are preserved as much as possible.
 
 ## Image Captioning
 

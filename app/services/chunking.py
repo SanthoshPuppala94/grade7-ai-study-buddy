@@ -59,6 +59,11 @@ class SectionAwareChunker:
         parsed_sections = _detect_textbook_sections(document.page_content)
         sections: list[SectionDocument] = []
         for index, parsed in enumerate(parsed_sections, start=1):
+            page_numbers = _extract_page_numbers(parsed["content"])
+            related_images = _filter_related_images(
+                document.metadata.get("related_images", []),
+                page_numbers,
+            )
             metadata = {
                 **document.metadata,
                 "section_title": parsed["title"],
@@ -66,6 +71,10 @@ class SectionAwareChunker:
                 "section_index": index,
                 "section_path": _build_section_path(document.metadata, parsed["title"]),
             }
+            if page_numbers:
+                metadata["page_numbers"] = page_numbers
+                metadata["page_number"] = page_numbers[0]
+            metadata["related_images"] = related_images
             sections.append(SectionDocument(page_content=parsed["content"], metadata=metadata))
         return sections or [document]
 
@@ -80,7 +89,8 @@ def _detect_textbook_sections(text: str) -> list[dict]:
     for line in lines:
         stripped = line.strip()
         heading = _classify_heading(stripped)
-        if heading and current_lines:
+        if heading and current_lines and not _only_page_markers(current_lines):
+            trailing_page_markers = _pop_trailing_page_markers(current_lines)
             sections.append(
                 {
                     "title": current_title,
@@ -90,9 +100,9 @@ def _detect_textbook_sections(text: str) -> list[dict]:
             )
             current_title = heading["title"]
             current_number = heading.get("number")
-            current_lines = [line]
+            current_lines = [*trailing_page_markers, line]
             continue
-        if heading and not current_lines:
+        if heading and (not current_lines or _only_page_markers(current_lines)):
             current_title = heading["title"]
             current_number = heading.get("number")
         current_lines.append(line)
@@ -128,6 +138,22 @@ def _classify_heading(line: str) -> dict | None:
     return None
 
 
+def _only_page_markers(lines: list[str]) -> bool:
+    non_empty = [line.strip() for line in lines if line.strip()]
+    return bool(non_empty) and all(re.match(r"^\[Page\s+\d+\]$", line) for line in non_empty)
+
+
+def _pop_trailing_page_markers(lines: list[str]) -> list[str]:
+    trailing: list[str] = []
+    while lines and not lines[-1].strip():
+        trailing.insert(0, lines.pop())
+    while lines and re.match(r"^\[Page\s+\d+\]$", lines[-1].strip()):
+        trailing.insert(0, lines.pop())
+        while lines and not lines[-1].strip():
+            lines.pop()
+    return trailing
+
+
 def _section_metadata(metadata: dict, fallback: str) -> dict:
     title = metadata.get("topic") or metadata.get("section") or metadata.get("chapter") or fallback
     return {
@@ -145,3 +171,14 @@ def _build_section_path(metadata: dict, title: str) -> str:
         str(title).strip(),
     ]
     return " > ".join(part for part in parts if part)
+
+
+def _extract_page_numbers(text: str) -> list[int]:
+    return [int(match) for match in re.findall(r"\[Page\s+(\d+)\]", text)]
+
+
+def _filter_related_images(images: list[dict], page_numbers: list[int]) -> list[dict]:
+    if not page_numbers:
+        return []
+    page_set = set(page_numbers)
+    return [image for image in images if image.get("page_number") in page_set]
