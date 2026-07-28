@@ -1,9 +1,8 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
-
 from app.config import SAMPLE_DOCS_DIR, TEXTBOOKS_DIR
+from app.services.chunking import SectionAwareChunker, SectionDocument
 from app.services.pdf_extractor import extract_pdf
 
 
@@ -28,17 +27,14 @@ def load_and_split_documents() -> list[Document]:
 
 
 def split_document(document: Document) -> list[Document]:
-    if document.metadata.get("file_type") == ".md":
-        sections = MarkdownHeaderTextSplitter(
-            headers_to_split_on=[("#", "chapter"), ("##", "section"), ("###", "topic")],
-            strip_headers=False,
-        ).split_text(document.page_content)
-        chunks = []
-        for section in sections:
-            section.metadata = {**document.metadata, **section.metadata}
-            chunks.extend(_recursive_splitter().split_documents([section]))
-        return chunks
-    return _recursive_splitter().split_documents([document])
+    section_document = SectionDocument(
+        page_content=document.page_content,
+        metadata=document.metadata,
+    )
+    return [
+        Document(page_content=chunk.page_content, metadata=chunk.metadata)
+        for chunk in SectionAwareChunker().split(section_document)
+    ]
 
 
 def _load_markdown_samples() -> list[Document]:
@@ -92,14 +88,6 @@ def _load_textbook_pdfs() -> list[Document]:
     return docs
 
 
-def _recursive_splitter() -> RecursiveCharacterTextSplitter:
-    return RecursiveCharacterTextSplitter(
-        chunk_size=850,
-        chunk_overlap=120,
-        separators=["\n\n", "\n", ". ", " ", ""],
-    )
-
-
 def _number_chunks(chunks: list[Document]) -> list[Document]:
     total = len(chunks)
     for index, chunk in enumerate(chunks, start=1):
@@ -118,4 +106,3 @@ def _subject_from_name(path: Path) -> str:
     if "english" in name:
         return "english"
     return "general"
-

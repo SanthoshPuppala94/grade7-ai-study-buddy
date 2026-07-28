@@ -19,6 +19,7 @@ Students often need help understanding textbook concepts, diagrams, and practice
 - PDF image extraction with noise filtering
 - Base64 image conversion
 - Context-aware vision captioning boundary
+- Section-aware chunking with recursive fallback
 - Related image retrieval with RAG chunks
 - Local deterministic embeddings for offline demos
 - Citations and student-safety guardrails
@@ -53,10 +54,28 @@ Textbook sources
   -> convert clean image to base64
   -> caption image with page context
   -> create image embedding text
-  -> chunk text and captions
+  -> split by textbook sections/headings
+  -> recursively split oversized sections
   -> embed chunks
   -> retrieve relevant evidence
 ```
+
+## Section-Aware Chunking
+
+The ingestion pipeline uses section-aware chunking before embedding. Markdown files are split by `#`, `##`, and `###` headers. PDF textbook text is split by detected chapter, unit, uppercase heading, and numbered section patterns such as `1.1 Large Numbers Around Us`.
+
+Each chunk carries metadata such as:
+
+- `subject`
+- `grade`
+- `file_name`
+- `page_number`
+- `section_title`
+- `section_path`
+- `section_number`
+- `chunk_strategy`
+
+This improves retrieval because the vector store can return the exact textbook section instead of a random character slice. If a section is still too large, the project applies `RecursiveCharacterTextSplitter` inside that section so semantic boundaries are preserved as much as possible.
 
 ## Image Captioning
 
@@ -102,4 +121,3 @@ Why do plants need sunlight?
 ## GitHub / Portfolio Summary
 
 > Multimodal RAG tutor for Grade 7 students using FastAPI, LangGraph, PyMuPDF, image captioning, vector search, citations, and quiz generation.
-
