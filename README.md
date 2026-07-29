@@ -103,8 +103,22 @@ r"^(chapter|unit)\s+\d+[:\-\s]*(.+)?$"
 After sections are detected, oversized sections are split using LangChain `RecursiveCharacterTextSplitter` with fallback separators:
 
 ```python
+chunk_size=1000
+chunk_overlap=0
 separators=["\n\n", "\n", ". ", " ", ""]
 ```
+
+The separator order matters:
+
+- `"\n\n"` keeps paragraphs together when possible.
+- `"\n"` handles line-based textbook formatting.
+- `". "` splits long paragraphs at sentence boundaries.
+- `" "` falls back to word-level splitting.
+- `""` is the final character-level fallback when no cleaner boundary exists.
+
+Because the first split is already based on textbook structure, heavy overlap is usually less important than it would be with simple fixed-size chunking. The project uses `chunk_overlap=0` for this reason. In production, this can be tuned per subject or document type if evaluation shows that answers lose context at boundaries.
+
+Important detail: LangChain `RecursiveCharacterTextSplitter` uses character length by default, not true LLM token count. In production, token-aware splitters can be used when strict model context-window control is required.
 
 So the real flow is:
 
@@ -113,7 +127,7 @@ Full PDF text
   -> regex detects textbook section headings
   -> section-level documents are created
   -> section metadata is attached
-  -> recursive splitter runs only inside oversized sections
+  -> recursive splitter runs only inside oversized sections using paragraph/line/sentence/word fallback separators
   -> chunks are embedded and stored for retrieval
 ```
 

@@ -83,8 +83,16 @@ r"^(chapter|unit)\s+\d+[:\-\s]*(.+)?$"
 After the section-level split, the recursive fallback uses:
 
 ```python
+chunk_size=1000
+chunk_overlap=0
 separators=["\n\n", "\n", ". ", " ", ""]
 ```
+
+The fallback separator order is intentional. Paragraph breaks are preferred first, then line breaks, then sentence boundaries using `. `, then words, and finally characters. The sentence separator matters because some textbook sections can be much larger than the model input budget; `. ` allows the splitter to break a long section into more natural sentence-level chunks instead of cutting in the middle of a concept.
+
+The project uses `chunk_size=1000` and `chunk_overlap=0` because the first pass already splits by document structure. With section-aware chunking, overlap is less critical than with naive fixed-size chunking. If retrieval evaluation later shows boundary-loss issues, overlap can be tuned per source type.
+
+LangChain's default recursive splitter measures character length, not exact LLM tokens. For strict production token control, the same design can be moved to a token-aware splitter or a tokenizer-backed length function.
 
 This means separators are used for chunk-size control, not for the primary section discovery. In interview terms: **regex identifies textbook structure; recursive separators control chunk size.**
 

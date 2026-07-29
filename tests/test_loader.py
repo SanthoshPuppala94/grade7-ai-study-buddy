@@ -11,6 +11,8 @@ def test_loader_splits_sample_documents_with_metadata():
     assert all("subject" in chunk.metadata for chunk in chunks)
     assert any(chunk.metadata["subject"] == "mathematics" for chunk in chunks)
     assert all(chunk.metadata["chunk_strategy"] == "section_aware_recursive" for chunk in chunks)
+    assert all(chunk.metadata["chunk_size"] == 1000 for chunk in chunks)
+    assert all(chunk.metadata["chunk_overlap"] == 0 for chunk in chunks)
     assert any("section_path" in chunk.metadata for chunk in chunks)
 
 

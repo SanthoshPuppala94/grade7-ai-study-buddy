@@ -3,6 +3,10 @@ from dataclasses import dataclass
 
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 
+DEFAULT_SECTION_CHUNK_SIZE = 1000
+DEFAULT_SECTION_CHUNK_OVERLAP = 0
+RECURSIVE_FALLBACK_SEPARATORS = ["\n\n", "\n", ". ", " ", ""]
+
 
 @dataclass
 class SectionDocument:
@@ -13,13 +17,17 @@ class SectionDocument:
 class SectionAwareChunker:
     """Split study material while preserving chapter/section metadata."""
 
-    def __init__(self, chunk_size: int = 850, chunk_overlap: int = 120):
+    def __init__(
+        self,
+        chunk_size: int = DEFAULT_SECTION_CHUNK_SIZE,
+        chunk_overlap: int = DEFAULT_SECTION_CHUNK_OVERLAP,
+    ):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self._recursive_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
-            separators=["\n\n", "\n", ". ", " ", ""],
+            separators=RECURSIVE_FALLBACK_SEPARATORS,
         )
 
     def split(self, document: SectionDocument) -> list[SectionDocument]:
@@ -38,6 +46,9 @@ class SectionAwareChunker:
                     **part.metadata,
                     "section_chunk_index": part_index,
                     "chunk_strategy": "section_aware_recursive",
+                    "chunk_size": self.chunk_size,
+                    "chunk_overlap": self.chunk_overlap,
+                    "fallback_separators": RECURSIVE_FALLBACK_SEPARATORS,
                 }
                 chunks.append(SectionDocument(page_content=part.page_content, metadata=part.metadata))
         return chunks
