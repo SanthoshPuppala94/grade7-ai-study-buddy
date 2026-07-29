@@ -78,6 +78,45 @@ Each chunk carries metadata such as:
 
 This improves retrieval because the vector store can return the exact textbook section instead of a random character slice. It also handles sections that continue across page boundaries. If a section is still too large, the project applies `RecursiveCharacterTextSplitter` inside that section so semantic boundaries are preserved as much as possible.
 
+### Regex vs Separator Strategy
+
+The project does **not** use simple separators as the first step for PDF section detection. For PDFs, it first uses regex-based heading detection in `app/services/chunking.py`.
+
+Supported heading patterns include:
+
+```text
+1.1 Large Numbers Around Us
+2.3 Plant Nutrition
+5.2.1 Water Cycle
+Chapter 1 Large Numbers
+Unit 2 Science Around Us
+LARGE NUMBERS AROUND US
+```
+
+The main regex patterns are:
+
+```python
+r"^(\d+(?:\.\d+){0,3})\s+(.+)$"
+r"^(chapter|unit)\s+\d+[:\-\s]*(.+)?$"
+```
+
+After sections are detected, oversized sections are split using LangChain `RecursiveCharacterTextSplitter` with fallback separators:
+
+```python
+separators=["\n\n", "\n", ". ", " ", ""]
+```
+
+So the real flow is:
+
+```text
+Full PDF text
+  -> regex detects textbook section headings
+  -> section-level documents are created
+  -> section metadata is attached
+  -> recursive splitter runs only inside oversized sections
+  -> chunks are embedded and stored for retrieval
+```
+
 ## Image Captioning
 
 The image captioner receives:

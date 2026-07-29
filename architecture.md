@@ -60,6 +60,34 @@ The project uses a two-stage chunking strategy. For PDFs, PyMuPDF extracts text 
 
 Every chunk stores section metadata including `section_title`, `section_path`, `section_number`, page number, source file, subject, grade, and `chunk_strategy`. In production, this metadata can be used for filtering, citations, debugging retrieval quality, and student-facing source references.
 
+### Regex and Separator Rules
+
+PDF section detection is regex-first. The system does not initially split PDFs by character count because that can break textbook sections across arbitrary boundaries. Instead, it scans the merged full-PDF text line by line and identifies section headings.
+
+The heading detector supports:
+
+| Heading type | Example | Detection approach |
+| --- | --- | --- |
+| Numbered section | `1.1 Large Numbers Around Us` | Regex for dotted section numbers |
+| Nested section | `5.2.1 Water Cycle` | Regex for multi-level dotted numbers |
+| Chapter or unit | `Chapter 1 Large Numbers` | Case-insensitive chapter/unit regex |
+| Textbook title heading | `LARGE NUMBERS AROUND US` | Uppercase heading heuristic |
+
+Representative regex patterns:
+
+```python
+r"^(\d+(?:\.\d+){0,3})\s+(.+)$"
+r"^(chapter|unit)\s+\d+[:\-\s]*(.+)?$"
+```
+
+After the section-level split, the recursive fallback uses:
+
+```python
+separators=["\n\n", "\n", ". ", " ", ""]
+```
+
+This means separators are used for chunk-size control, not for the primary section discovery. In interview terms: **regex identifies textbook structure; recursive separators control chunk size.**
+
 ## Guardrails
 
 - Student-safety guardrail blocks cheating/copying requests.
