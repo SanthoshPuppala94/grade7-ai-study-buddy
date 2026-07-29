@@ -49,6 +49,7 @@ Student / UI
 Textbook sources
   -> load markdown/PDF
   -> extract text and images from every PDF page
+  -> clean unwanted PDF text with regex
   -> filter noisy images
   -> convert clean image to base64
   -> caption image with page context
@@ -62,7 +63,9 @@ Textbook sources
 
 ## Section-Aware Chunking
 
-The ingestion pipeline uses section-aware chunking before embedding. Markdown files are split by `#`, `##`, and `###` headers. For PDFs, PyMuPDF first extracts text and images from all pages, then the loader merges the PDF into one logical document with page markers such as `[Page 1]`. After that, textbook text is split by detected chapter, unit, uppercase heading, and numbered section patterns such as `1.1 Large Numbers Around Us`.
+The ingestion pipeline uses section-aware chunking before embedding. Markdown files are split by `#`, `##`, and `###` headers. For PDFs, PyMuPDF first extracts text and images from all pages, then the extracted text is cleaned with Python `re` rules to remove unwanted PDF noise. After cleanup, the loader merges the PDF into one logical document with page markers such as `[Page 1]`. After that, textbook text is split by detected chapter, unit, uppercase heading, and numbered section patterns such as `1.1 Large Numbers Around Us`.
+
+Regex cleanup removes common extraction noise such as repeated spaces, repeated blank lines, standalone page numbers, `Page 12` labels, reprint footer lines, and copyright/footer text. This keeps the vector DB focused on useful textbook content instead of PDF formatting artifacts.
 
 Each chunk carries metadata such as:
 

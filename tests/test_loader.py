@@ -75,6 +75,7 @@ def test_pdf_loader_builds_one_full_document_before_section_chunking():
     document = _build_pdf_document(Path("sample.pdf"), extracted, "mathematics")
 
     assert document.metadata["loader_strategy"] == "full_pdf_then_section_split"
+    assert document.metadata["text_cleaning"] == "regex_noise_cleanup"
     assert document.metadata["page_numbers"] == [1, 2]
     assert document.metadata["related_images"][0]["page_number"] == 2
     assert "[Page 1]" in document.page_content

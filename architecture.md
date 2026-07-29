@@ -36,6 +36,7 @@ Student
 ```text
 PDF page
   -> page text
+  -> regex text cleanup
   -> clean image artifacts
   -> base64
   -> context-aware image caption
@@ -50,7 +51,7 @@ PDF page
 
 ## Chunking Design
 
-The project uses a two-stage chunking strategy. For PDFs, PyMuPDF extracts text and images page by page, but the loader merges the pages into one logical PDF document before chunking. Page markers such as `[Page 1]` are preserved so each section chunk can still carry page metadata and related images.
+The project uses a two-stage chunking strategy. For PDFs, PyMuPDF extracts text and images page by page. Before chunking, Python `re` cleanup removes unwanted extracted text such as repeated spaces, repeated blank lines, standalone page numbers, `Page N` labels, reprint footer lines, and copyright/footer noise. Then the loader merges the pages into one logical PDF document before chunking. Page markers such as `[Page 1]` are preserved so each section chunk can still carry page metadata and related images.
 
 1. **Section-aware split**
    The loader first detects meaningful document sections. Markdown uses header-aware splitting. PDF textbook text uses common textbook heading patterns such as chapter titles, unit titles, uppercase lesson headings, and numbered sections like `1.1`, `2.3.1`, or `5.2`.

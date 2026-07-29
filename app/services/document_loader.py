@@ -4,6 +4,7 @@ from pathlib import Path
 from app.config import SAMPLE_DOCS_DIR, TEXTBOOKS_DIR
 from app.services.chunking import SectionAwareChunker, SectionDocument
 from app.services.pdf_extractor import extract_pdf
+from app.services.text_cleaning import clean_pdf_text
 
 
 @dataclass
@@ -76,7 +77,7 @@ def _build_pdf_document(path: Path, extracted: dict, subject: str) -> Document:
         page_numbers.append(page_number)
         vector_drawing_count += page["vector_drawing_count"]
 
-        text_parts = [f"[Page {page_number}]", page["text"]]
+        text_parts = [f"[Page {page_number}]", clean_pdf_text(page["text"])]
         for image in page["images"]:
             image_with_page = {**image, "page_number": page_number}
             related_images.append(image_with_page)
@@ -98,6 +99,7 @@ def _build_pdf_document(path: Path, extracted: dict, subject: str) -> Document:
             "page_numbers": page_numbers,
             "loader": "PyMuPDFTextImageLoader",
             "loader_strategy": "full_pdf_then_section_split",
+            "text_cleaning": "regex_noise_cleanup",
             "related_images": related_images,
             "vector_drawing_count": vector_drawing_count,
         },
