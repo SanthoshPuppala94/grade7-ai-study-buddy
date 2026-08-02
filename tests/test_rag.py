@@ -27,3 +27,5 @@ def test_dense_and_hybrid_modes_are_available():
     assert hybrid_results
     assert all(result["retrieval_mode"] == "dense" for result in dense_results)
     assert all(result["retrieval_mode"] == "hybrid" for result in hybrid_results)
+    assert hybrid_results[0]["fusion"]["dense_weight"] == 0.6
+    assert hybrid_results[0]["fusion"]["sparse_weight"] == 0.4

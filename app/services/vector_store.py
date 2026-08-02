@@ -6,6 +6,10 @@ from dataclasses import dataclass
 from app.services.document_loader import load_and_split_documents
 from app.services.embeddings import HashEmbedding
 
+DENSE_RETRIEVAL_WEIGHT = 0.6
+SPARSE_RETRIEVAL_WEIGHT = 0.4
+RRF_RANK_CONSTANT = 60
+
 
 @dataclass
 class Chunk:
@@ -91,7 +95,7 @@ class StudyVectorStore:
         sparse_results = self.sparse_search(query=query, k=max(k * 2, 8), subject=subject)
         fused = _reciprocal_rank_fusion(
             ranked_result_sets=[dense_results, sparse_results],
-            weights=[0.6, 0.4],
+            weights=[DENSE_RETRIEVAL_WEIGHT, SPARSE_RETRIEVAL_WEIGHT],
         )
         return fused[:k]
 
@@ -135,13 +139,21 @@ def _sparse_score(query_terms: list[str], text: str, metadata: dict) -> float:
 def _reciprocal_rank_fusion(ranked_result_sets: list[list[dict]], weights: list[float]) -> list[dict]:
     fused_scores: dict[str, float] = {}
     fused_results: dict[str, dict] = {}
-    rank_constant = 60
 
     for results, weight in zip(ranked_result_sets, weights):
         for rank, result in enumerate(results, start=1):
             source = result["source"]
-            fused_scores[source] = fused_scores.get(source, 0.0) + weight / (rank_constant + rank)
-            fused_results[source] = {**result, "retrieval_mode": "hybrid"}
+            fused_scores[source] = fused_scores.get(source, 0.0) + weight / (RRF_RANK_CONSTANT + rank)
+            fused_results[source] = {
+                **result,
+                "retrieval_mode": "hybrid",
+                "fusion": {
+                    "strategy": "reciprocal_rank_fusion",
+                    "dense_weight": DENSE_RETRIEVAL_WEIGHT,
+                    "sparse_weight": SPARSE_RETRIEVAL_WEIGHT,
+                    "rank_constant": RRF_RANK_CONSTANT,
+                },
+            }
 
     for source, result in fused_results.items():
         result["score"] = fused_scores[source]

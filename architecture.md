@@ -62,6 +62,15 @@ The retrieval layer supports:
 3. **Hybrid retrieval**
    Dense and sparse result lists are fused with reciprocal rank fusion. This gives a better balance because dense search captures meaning while sparse search protects exact-match terms.
 
+Current local weighting:
+
+```text
+dense_weight = 0.6
+sparse_weight = 0.4
+```
+
+The 60/40 split is a starting point. Dense is weighted slightly higher because student questions are usually semantic. Sparse still has enough weight to preserve exact terms, formulas, section names, and IDs. In production, these weights should be tuned using golden questions, retrieval traces, recall metrics, and answer citation quality.
+
 The local project implements sparse scoring directly to avoid extra dependencies. In production, this layer can be replaced with OpenSearch BM25 plus vector search, Chroma/FAISS plus BM25, or a managed hybrid retrieval service.
 
 ## Chunking Design

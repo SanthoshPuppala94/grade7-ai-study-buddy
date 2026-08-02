@@ -72,6 +72,15 @@ The project supports three retrieval modes in `StudyVectorStore`:
 | Sparse | Uses regex tokenization and keyword frequency scoring | exact textbook terms, chapter names, formulas, IDs |
 | Hybrid | Combines dense and sparse results using reciprocal rank fusion | balanced retrieval for meaning plus exact terms |
 
+Current hybrid weighting:
+
+```text
+dense_weight = 0.6
+sparse_weight = 0.4
+```
+
+Dense has a slightly higher weight because most student questions are semantic and conversational. Sparse still receives strong weight so exact terms like `photosynthesis`, `chlorophyll`, exercise numbers, formulas, or enterprise-style IDs are not missed.
+
 Local examples:
 
 ```python
