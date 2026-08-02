@@ -20,6 +20,7 @@ Students often need help understanding textbook concepts, diagrams, and practice
 - Base64 image conversion
 - Context-aware vision captioning boundary
 - Section-aware chunking with recursive fallback
+- Dense, sparse, and hybrid retrieval modes
 - Related image retrieval with RAG chunks
 - Local deterministic embeddings for offline demos
 - Citations and student-safety guardrails
@@ -58,8 +59,28 @@ Textbook sources
   -> split by textbook sections/headings
   -> recursively split oversized sections
   -> embed chunks
-  -> retrieve relevant evidence
+  -> retrieve relevant evidence with dense/sparse/hybrid search
 ```
+
+## Retrieval Modes
+
+The project supports three retrieval modes in `StudyVectorStore`:
+
+| Mode | How it works | Best for |
+| --- | --- | --- |
+| Dense | Converts query and chunks into embeddings, then uses cosine similarity | semantic questions and paraphrases |
+| Sparse | Uses regex tokenization and keyword frequency scoring | exact textbook terms, chapter names, formulas, IDs |
+| Hybrid | Combines dense and sparse results using reciprocal rank fusion | balanced retrieval for meaning plus exact terms |
+
+Local examples:
+
+```python
+StudyVectorStore().search("photosynthesis chlorophyll", retrieval_mode="sparse")
+StudyVectorStore().search("plants make food from sunlight", retrieval_mode="dense")
+StudyVectorStore().search("what is photosynthesis", retrieval_mode="hybrid")
+```
+
+In production, sparse retrieval can be implemented with BM25/OpenSearch, dense retrieval with embeddings and a vector DB, and hybrid retrieval with weighted fusion or reranking.
 
 ## Section-Aware Chunking
 

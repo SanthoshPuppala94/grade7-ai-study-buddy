@@ -28,7 +28,7 @@ Student
 | Section-Aware Chunker | Preserves chapter, section, topic, page, and source metadata during chunking |
 | PDF Extractor | Extracts text, images, and vector signals using PyMuPDF |
 | Vision Captioner | Converts clean images to base64 and generates context-aware captions |
-| Vector Store | Stores and searches embedded chunks |
+| Vector Store | Stores chunks and supports dense, sparse, and hybrid retrieval |
 | Guardrails | Blocks cheating requests and requires citations |
 
 ## Multimodal RAG Flow
@@ -45,9 +45,24 @@ PDF page
   -> section-aware chunking
   -> recursive fallback chunking
   -> embedding
-  -> retrieval
+  -> dense / sparse / hybrid retrieval
   -> answer + related_images
 ```
+
+## Retrieval Design
+
+The retrieval layer supports:
+
+1. **Dense retrieval**
+   Query and chunks are embedded, then compared with cosine similarity. This is useful when the student asks a semantic question using different wording from the textbook.
+
+2. **Sparse retrieval**
+   Query and chunks are tokenized with regex and matched using keyword-frequency scoring. This is useful for exact terms such as `photosynthesis`, formulas, exercise numbers, chapter names, or production-style identifiers in enterprise RAG.
+
+3. **Hybrid retrieval**
+   Dense and sparse result lists are fused with reciprocal rank fusion. This gives a better balance because dense search captures meaning while sparse search protects exact-match terms.
+
+The local project implements sparse scoring directly to avoid extra dependencies. In production, this layer can be replaced with OpenSearch BM25 plus vector search, Chroma/FAISS plus BM25, or a managed hybrid retrieval service.
 
 ## Chunking Design
 
