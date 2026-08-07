@@ -4,6 +4,8 @@ import pytest
 
 from evaluation.rag_evaluator import (
     build_deepeval_test_cases,
+    build_deepeval_metrics,
+    get_evaluation_judge_model,
     load_golden_questions,
     run_retrieval_golden_checks,
 )
@@ -24,6 +26,10 @@ def test_retrieval_golden_checks_pass_locally():
     assert all(result["passed"] for result in results)
 
 
+def test_evaluation_uses_configured_rag_model_as_judge_model():
+    assert get_evaluation_judge_model() == "gpt-4o-mini"
+
+
 @pytest.mark.asyncio
 async def test_deepeval_rag_metrics_when_enabled():
     if os.getenv("RUN_DEEPEVAL") != "1":
@@ -35,12 +41,10 @@ async def test_deepeval_rag_metrics_when_enabled():
     test_cases = await build_deepeval_test_cases()
     assert test_cases
 
-    answer_relevancy = metrics.AnswerRelevancyMetric(threshold=0.7)
-    faithfulness = metrics.FaithfulnessMetric(threshold=0.7)
-    contextual_relevancy = metrics.ContextualRelevancyMetric(threshold=0.7)
+    deepeval_metrics = build_deepeval_metrics(metrics)
 
     for test_case in test_cases:
         deepeval.assert_test(
             test_case,
-            [answer_relevancy, faithfulness, contextual_relevancy],
+            deepeval_metrics,
         )

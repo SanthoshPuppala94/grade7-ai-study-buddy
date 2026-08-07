@@ -2,10 +2,12 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.config import get_settings
 from app.agents.tutor_agent import TutorAgent
 from app.services.vector_store import StudyVectorStore
 
 GOLDEN_QUESTIONS_PATH = Path(__file__).with_name("golden_questions.json")
+DEEPEVAL_METRIC_THRESHOLD = 0.7
 
 
 @dataclass
@@ -51,6 +53,29 @@ def run_retrieval_golden_checks(
             }
         )
     return results
+
+
+def get_evaluation_judge_model() -> str:
+    settings = get_settings()
+    return settings.evaluation_judge_model or settings.openai_model
+
+
+def build_deepeval_metrics(metrics_module):
+    judge_model = get_evaluation_judge_model()
+    return [
+        metrics_module.AnswerRelevancyMetric(
+            threshold=DEEPEVAL_METRIC_THRESHOLD,
+            model=judge_model,
+        ),
+        metrics_module.FaithfulnessMetric(
+            threshold=DEEPEVAL_METRIC_THRESHOLD,
+            model=judge_model,
+        ),
+        metrics_module.ContextualRelevancyMetric(
+            threshold=DEEPEVAL_METRIC_THRESHOLD,
+            model=judge_model,
+        ),
+    ]
 
 
 async def build_deepeval_test_cases(

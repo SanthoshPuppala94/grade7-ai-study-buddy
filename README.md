@@ -135,6 +135,16 @@ DeepEval metrics used:
 | `FaithfulnessMetric` | checks if the answer is grounded in retrieved context |
 | `ContextualRelevancyMetric` | checks if retrieved chunks are relevant to the question |
 
+Evaluation configuration:
+
+```text
+judge_model = EVALUATION_JUDGE_MODEL or OPENAI_MODEL
+default judge_model = gpt-4o-mini
+metric_threshold = 0.7
+```
+
+The evaluation framework intentionally uses the same model configuration as the RAG/chat path unless `EVALUATION_JUDGE_MODEL` is set separately. This keeps local behavior explicit and avoids relying on hidden DeepEval defaults.
+
 Production use:
 
 ```text

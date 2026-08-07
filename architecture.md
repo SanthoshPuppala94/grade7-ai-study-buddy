@@ -100,6 +100,16 @@ golden question
   -> ContextualRelevancyMetric
 ```
 
+Evaluation model:
+
+```text
+OPENAI_MODEL = gpt-4o-mini
+EVALUATION_JUDGE_MODEL = gpt-4o-mini
+threshold = 0.7
+```
+
+The evaluation framework uses `EVALUATION_JUDGE_MODEL` when configured. Otherwise it falls back to the same `OPENAI_MODEL` used by the RAG/chat path. This makes the judge model explicit and version-controlled through environment configuration.
+
 This helps validate whether retrieval and answer generation still work after changing chunking, PDF cleanup, embeddings, retrieval weights, top-k values, or prompts.
 
 ## Chunking Design
