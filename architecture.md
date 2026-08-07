@@ -29,6 +29,7 @@ Student
 | PDF Extractor | Extracts text, images, and vector signals using PyMuPDF |
 | Vision Captioner | Converts clean images to base64 and generates context-aware captions |
 | Vector Store | Stores chunks and supports dense, sparse, and hybrid retrieval |
+| Evaluation Framework | Uses golden questions and optional DeepEval metrics to validate RAG quality |
 | Guardrails | Blocks cheating requests and requires citations |
 
 ## Multimodal RAG Flow
@@ -72,6 +73,34 @@ sparse_weight = 0.4
 The 60/40 split is a starting point. Dense is weighted slightly higher because student questions are usually semantic. Sparse still has enough weight to preserve exact terms, formulas, section names, and IDs. In production, these weights should be tuned using golden questions, retrieval traces, recall metrics, and answer citation quality.
 
 The local project implements sparse scoring directly to avoid extra dependencies. In production, this layer can be replaced with OpenSearch BM25 plus vector search, Chroma/FAISS plus BM25, or a managed hybrid retrieval service.
+
+## Evaluation Design
+
+RAG evaluation is separated into deterministic local tests and optional LLM-judge evaluation.
+
+Local evaluation:
+
+```text
+golden question
+  -> hybrid retrieval
+  -> top-k chunks
+  -> expected term check
+  -> pass/fail in pytest
+```
+
+DeepEval evaluation:
+
+```text
+golden question
+  -> RAG Agent answer
+  -> retrieval context
+  -> LLMTestCase
+  -> AnswerRelevancyMetric
+  -> FaithfulnessMetric
+  -> ContextualRelevancyMetric
+```
+
+This helps validate whether retrieval and answer generation still work after changing chunking, PDF cleanup, embeddings, retrieval weights, top-k values, or prompts.
 
 ## Chunking Design
 

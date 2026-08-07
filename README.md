@@ -21,6 +21,7 @@ Students often need help understanding textbook concepts, diagrams, and practice
 - Context-aware vision captioning boundary
 - Section-aware chunking with recursive fallback
 - Dense, sparse, and hybrid retrieval modes
+- RAG evaluation with golden questions and optional DeepEval metrics
 - Related image retrieval with RAG chunks
 - Local deterministic embeddings for offline demos
 - Citations and student-safety guardrails
@@ -90,6 +91,59 @@ StudyVectorStore().search("what is photosynthesis", retrieval_mode="hybrid")
 ```
 
 In production, sparse retrieval can be implemented with BM25/OpenSearch, dense retrieval with embeddings and a vector DB, and hybrid retrieval with weighted fusion or reranking.
+
+## RAG Evaluation
+
+The project includes two evaluation layers:
+
+1. **Offline golden-question checks**
+   These run with normal `pytest` and do not require an LLM judge or API key. They verify that important questions retrieve expected textbook evidence.
+
+2. **Optional DeepEval metrics**
+   These run when `deepeval` is installed and `RUN_DEEPEVAL=1` is set. DeepEval can score answer relevancy, faithfulness, and contextual relevancy using an LLM judge.
+
+Golden questions live in:
+
+```text
+evaluation/golden_questions.json
+```
+
+Run normal tests:
+
+```bash
+python -m pytest
+```
+
+Install optional DeepEval dependencies:
+
+```bash
+pip install -r requirements-eval.txt
+```
+
+Run DeepEval-enabled tests:
+
+```bash
+$env:RUN_DEEPEVAL="1"
+python -m pytest tests/test_rag_evaluation.py
+```
+
+DeepEval metrics used:
+
+| Metric | Purpose |
+| --- | --- |
+| `AnswerRelevancyMetric` | checks if the answer responds to the question |
+| `FaithfulnessMetric` | checks if the answer is grounded in retrieved context |
+| `ContextualRelevancyMetric` | checks if retrieved chunks are relevant to the question |
+
+Production use:
+
+```text
+Change chunking / embedding / top-k / hybrid weights / prompt
+  -> run golden question tests
+  -> run DeepEval metrics
+  -> compare scores
+  -> promote only if retrieval and answer quality stay above threshold
+```
 
 ## Section-Aware Chunking
 

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "math_one_lakh",
+    "question": "What is one lakh?",
+    "subject": "mathematics",
+    "expected_context_terms": ["one lakh", "100,000", "1,00,000"],
+    "expected_answer_terms": ["one lakh", "100,000"]
+  },
+  {
+    "id": "science_photosynthesis",
+    "question": "What is photosynthesis?",
+    "subject": "science",
+    "expected_context_terms": ["photosynthesis", "sunlight", "water", "carbon dioxide", "chlorophyll"],
+    "expected_answer_terms": ["photosynthesis", "sunlight", "plants"]
+  },
+  {
+    "id": "science_leaves",
+    "question": "Why are leaves important for plants?",
+    "subject": "science",
+    "expected_context_terms": ["leaves", "chlorophyll", "sunlight"],
+    "expected_answer_terms": ["leaves", "chlorophyll"]
+  }
+]
